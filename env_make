@@ -1,0 +1,9 @@
+# Configure HTTP port for proxy to run on
+PORTS = -p 9000:9000
+
+# Further options for proxy
+# EXPIRY_TIME: TTL in seconds for cache entries
+# CAPACITY: Max number of entries for the cache
+
+ENV = \
+  -e EXPIRY_TIME=1 -e CAPACITY=1000
