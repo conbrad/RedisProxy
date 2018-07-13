@@ -3,11 +3,7 @@ NS = conbrad
 VERSION ?= latest
 REPO = redisproxy
 
-.PHONY: build run test stop clean
-
-# Only build if image does not exist, otherwise we get stalled by SBT dependencies every time
-build:
-	@if [ "$$(docker images -q $(NS)/$(REPO) 2> /dev/null)" == "" ]; then docker-compose build; fi
+.PHONY: run test stop clean
 
 run:
 	docker-compose up
@@ -22,4 +18,4 @@ clean: stop
 	docker rm $$(docker ps -aq --filter ancestor=$(NS)/$(REPO)); \
 	docker rmi $$(docker images $(NS)/$(REPO)); \
 
-default: build
+default: test
