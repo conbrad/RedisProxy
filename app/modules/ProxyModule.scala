@@ -1,3 +1,4 @@
+package modules
 
 import akka.actor.ActorSystem
 import com.google.inject.{AbstractModule, Provides, Singleton}
