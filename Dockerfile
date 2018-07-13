@@ -41,3 +41,5 @@ RUN sbt update
 
 # HTTP server port
 EXPOSE 9000
+
+ENTRYPOINT ["sbt", "run"]

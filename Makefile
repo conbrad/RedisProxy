@@ -7,13 +7,13 @@ REPO = redisproxy
 
 # Only build if image does not exist, otherwise we get stalled by SBT dependencies every time
 build:
-	@if [ "$$(docker images -q $(NS)/$(REPO) 2> /dev/null)" == "" ]; then docker build -t $(NS)/$(REPO):$(VERSION) .; fi
+	@if [ "$$(docker images -q $(NS)/$(REPO) 2> /dev/null)" == "" ]; then docker-compose build; fi
 
-run: build
-	docker run -i $(PORTS) $(ENV) $(NS)/$(REPO) sbt run
+run:
+	docker-compose up
 
-test: build
-	docker run -i $(NS)/$(REPO) sbt test
+test:
+	docker-compose run proxy sbt test
 
 stop:
 	docker stop $$(docker ps -aq --filter ancestor=$(NS)/$(REPO))

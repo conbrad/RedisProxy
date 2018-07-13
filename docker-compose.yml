@@ -1,0 +1,15 @@
+version: "2"
+services:
+  proxy:
+      build: .
+      image: conbrad/redisproxy:latest
+      environment:
+          - EXPIRY_TIME=1
+          - CAPACITY=1000
+      ports:
+          - "9000:9000"
+      tty: true
+  redis:
+      image: redis
+      ports:
+          - "6379"
