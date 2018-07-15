@@ -2,6 +2,7 @@ package controllers
 
 import modules.ProxyModule
 import org.mockito.Mockito._
+import org.scalatest.{MustMatchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice._
@@ -20,7 +21,7 @@ import scala.concurrent.Future
   *
   * For more information, see https://www.playframework.com/documentation/latest/ScalaTestingWithScalaTest
   */
-class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting with MockitoSugar {
+class HomeControllerSpec extends WordSpec with GuiceOneAppPerTest with Injecting with MockitoSugar with MustMatchers {
 
   override def fakeApplication(): Application = {
     new GuiceApplicationBuilder()
@@ -29,7 +30,7 @@ class HomeControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       .build()
   }
 
-  "HomeController GET" should {
+  "A GET request to the HomeController" should {
     "return the json result from redis/redis cache" in {
       val testKey = "test"
       val testValue = "testVal"

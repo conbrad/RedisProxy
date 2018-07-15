@@ -2,27 +2,38 @@ package services.util
 
 import javax.inject.Singleton
 
+import scala.collection.mutable.ArrayBuffer
+
 @Singleton
 class LinkedList {
-  private var head = new Node("")
-  private var tail = head
-  private var size = 0L
-  head.prev = tail
+  var head: Node = null
+  var tail: Node = null
+  private var count = 0L
 
-  def add(value: String) = {
-    val node = new Node(value)
-    node.next = tail
-    tail.prev = node
-    tail = node
-    size += 1
+  def addFirst(key: String, value: String): Node = {
+    val node = new Node(key, value)
+    if (head == null) {
+      head = node
+      tail = head
+    } else {
+      node.next = tail
+      tail.prev = node
+      tail = node
+    }
+    count += 1
     node
   }
 
   // Splices out the node in O(1)
   def remove(node: Node): Unit = {
     if (node == head) {
-      head = head.prev
-      head.next = null
+      if(count == 1L) {
+        head = null
+        tail = null
+      } else {
+        head = head.prev
+        head.next = null
+      }
     } else if (node == tail) {
       tail = node.next
       tail.prev = null
@@ -32,14 +43,37 @@ class LinkedList {
       prev.next = next
       next.prev = prev
     }
-    size -= 1
+    count -= 1
   }
 
-  def leastRecentlyUsed(): Node = {
-    val lru = head
-    head = head.prev
-    head.next = null
-    size -= 1
-    lru
+  def leastRecentlyUsed(): Option[Node] = {
+    if (count == 0L) {
+      None
+    } else if (count == 1L) {
+      val lru = head
+      head = null
+      tail = null
+      count -= 1
+      Some(lru)
+    } else {
+      val lru = head
+      head = head.prev
+      head.next = null
+      count -= 1
+      Some(lru)
+    }
   }
+
+  def allNodes: Seq[String] = {
+    var current = tail
+    var nodes = ArrayBuffer[String]()
+    while (current != null) {
+      nodes += current.value
+      current = current.next
+    }
+    nodes
+  }
+
+  def size: Long = count
+
 }

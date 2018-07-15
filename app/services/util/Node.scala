@@ -1,7 +1,6 @@
 package services.util
 
-class Node(lookupValue: String) {
+class Node(var key: String, var value: String) {
   var next: Node = null
   var prev: Node = null
-  var value: String = lookupValue
 }
