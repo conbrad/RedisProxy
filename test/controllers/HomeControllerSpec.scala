@@ -2,9 +2,8 @@ package controllers
 
 import modules.ProxyModule
 import org.mockito.Mockito._
-import org.scalatest.{MustMatchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play._
+import org.scalatest.{MustMatchers, WordSpec}
 import org.scalatestplus.play.guice._
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -41,7 +40,7 @@ class HomeControllerSpec extends WordSpec with GuiceOneAppPerTest with Injecting
 
       status(home) mustBe OK
       contentType(home) mustBe Some("application/json")
-      contentAsJson(home) mustBe Json.toJson(testValue)
+      contentAsJson(home) mustBe Json.parse("{\"result\":\"" + testValue + "\"}")
     }
   }
 }
