@@ -20,6 +20,7 @@ class TcpClient @Inject()(config: Configuration) {
   val in = new BufferedSource(socket.getInputStream).getLines()
   val out = new PrintStream(socket.getOutputStream)
 
+  logger.info(s"Connecting to redis protocl server on host: $host and port: $port")
   logger.info("Setting test keys")
   for(i <- 1 to numTestValues) {
     logger.info(s"Setting key: test$i to value: test$i")

@@ -6,10 +6,10 @@ REPO = redisproxy
 .PHONY: run test stop clean
 
 run:
-	docker-compose up
+	docker-compose up proxy redis
 
 test:
-	docker-compose run proxy sbt test
+	docker-compose up proxy-test
 
 stop:
 	docker stop $$(docker ps -aq --filter ancestor=$(NS)/$(REPO))
