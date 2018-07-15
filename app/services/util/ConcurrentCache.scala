@@ -39,12 +39,12 @@ class ConcurrentCache @Inject()(linkedList: LinkedList,
   val capacity: Long = config.get[Long]("cache.capacity")
   val count = new AtomicLong(0L)
 
-  var cache: concurrent.Map[String, (Node, Cancellable)] =
+  val cache: concurrent.Map[String, (Node, Cancellable)] =
     new ConcurrentHashMap[String, (Node, Cancellable)]().asScala
 
   val lock = new ReentrantReadWriteLock
 
-  logger.info(s"Cache created with ttl: $ttl millis, capacity: $capacity")
+  logger.info(s"Cache created with ttl: $ttl, capacity: $capacity")
 
   /**
     * Return the value mapped by key if it exists, else return None
