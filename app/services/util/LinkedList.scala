@@ -4,6 +4,12 @@ import javax.inject.Singleton
 
 import scala.collection.mutable.ArrayBuffer
 
+/**
+  * A non-threadsafe LinkedList implementation
+  *
+  * Additions are added to the tail, removals from the head
+  */
+
 @Singleton
 class LinkedList {
   var head: Node = null
