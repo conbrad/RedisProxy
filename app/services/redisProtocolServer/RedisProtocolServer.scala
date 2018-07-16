@@ -10,7 +10,7 @@ import play.api.Configuration
 import redis.RedisClient
 import services.RedisCache
 
-import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
@@ -27,7 +27,23 @@ class RedisProtocolServer @Inject()(config: Configuration,
     Tcp().bind(host, port)
   connections runForeach { connection =>
     // server logic, parses incoming commands
-    val commandParser = Flow[String]
+    val commandParser = Flow[String].map(command => {
+      val redisCommands = CommandParser.parseCommand(command)
+      redisCommands.map(redisCommand => {
+        RedisTokens.opType(redisCommand) match {
+          case Some(RedisTokens.GET) =>
+            redisCache.get(redisCommand.args.last)
+              .map(result => result)
+          case Some(RedisTokens.SET) =>
+            redis.set(redisCommand.args(1), redisCommand.args(2))
+              .map {
+                case true => "+OK"
+                case false => "-ERR update failed"
+              }
+          case _ => "-ERR unknown operation"
+        }
+      })
+    })
 
     val serverLogic = Flow[ByteString]
       .via(commandTokenizer)
