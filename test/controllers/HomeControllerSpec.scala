@@ -14,12 +14,6 @@ import services.RedisCache
 
 import scala.concurrent.Future
 
-/**
-  * Add your spec here.
-  * You can mock out a whole application including requests, plugins etc.
-  *
-  * For more information, see https://www.playframework.com/documentation/latest/ScalaTestingWithScalaTest
-  */
 class HomeControllerSpec extends WordSpec with GuiceOneAppPerTest with Injecting with MockitoSugar with MustMatchers {
 
   override def fakeApplication(): Application = {

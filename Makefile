@@ -1,4 +1,3 @@
-include env_make
 NS = conbrad
 VERSION ?= latest
 REPO = redisproxy

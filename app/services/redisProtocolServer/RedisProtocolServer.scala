@@ -1,18 +1,22 @@
-package services
+package services.redisProtocolServer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Tcp.{IncomingConnection, ServerBinding}
-import akka.stream.scaladsl.{Flow, Framing, Source, Tcp}
+import akka.stream.scaladsl.{Flow, Source, Tcp}
 import akka.util.ByteString
 import javax.inject.{Singleton, _}
 import play.api.Configuration
+import redis.RedisClient
+import services.RedisCache
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 @Singleton
 class RedisProtocolServer @Inject()(config: Configuration,
-                                    redisCache: RedisCache) {
+                                    redisCache: RedisCache,
+                                    redis: RedisClient) {
   val host: String = config.get[String]("protocolserver.host")
   val port: Int = config.get[Int]("protocolserver.port")
 
@@ -23,21 +27,25 @@ class RedisProtocolServer @Inject()(config: Configuration,
     Tcp().bind(host, port)
   connections runForeach { connection =>
     // server logic, parses incoming commands
-    val commandParser = Flow[String].takeWhile(_ != "BYE").map(_ + "!")
-
-    val prompt = s"$host:$port>"
+    val commandParser = Flow[String]
 
     val serverLogic = Flow[ByteString]
-      .via(Framing.delimiter(
-        ByteString("\n"),
-        maximumFrameLength = 256,
-        allowTruncation = true))
+      .via(commandTokenizer)
       .map(_.utf8String)
       .via(commandParser)
-      .merge(Source.single(prompt))
-      .map(_ + "\n")
+      .map(result => {
+        result + "\r\n"
+      })
       .map(ByteString(_))
 
     connection.handleWith(serverLogic)
   }
+
+  private val commandTokenizer = Flow[ByteString].statefulMapConcat { () =>
+    byteString =>
+      val command = byteString.utf8String
+        .mkString("")
+      List(ByteString(command))
+  }
+
 }

@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.google.inject.{AbstractModule, Provides, Singleton}
 import play.api.{Configuration, Environment}
 import redis.RedisClient
-import services.RedisProtocolServer
+import services.redisProtocolServer.RedisProtocolServer
 import tools.TcpClient
 
 class ProxyModule(environment: Environment,

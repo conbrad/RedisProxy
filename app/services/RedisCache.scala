@@ -42,4 +42,8 @@ class RedisCache @Inject()(redis: RedisClient,
         ""
     }
   }
+
+  def set(key: String, value: String): Future[Boolean] = {
+    redis.set(key, value)
+  }
 }
