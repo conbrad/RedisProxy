@@ -11,7 +11,8 @@ import redis.RedisClient
 import services.RedisCache
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 @Singleton
 class RedisProtocolServer @Inject()(config: Configuration,
@@ -32,15 +33,17 @@ class RedisProtocolServer @Inject()(config: Configuration,
       redisCommands.map(redisCommand => {
         RedisTokens.opType(redisCommand) match {
           case Some(RedisTokens.GET) =>
-            redisCache.get(redisCommand.args.last)
-              .map(result => result)
+            // We block here, unfortunately
+            Await.result(redisCache.get(redisCommand.args.last), Duration.Inf)
           case Some(RedisTokens.SET) =>
             redis.set(redisCommand.args(1), redisCommand.args(2))
               .map {
-                case true => "+OK"
-                case false => "-ERR update failed"
+                case true => RedisResponse.OK
+                case false => RedisResponse.ERR
               }
-          case _ => "-ERR unknown operation"
+          case Some(RedisTokens.COMMAND) =>
+            ""
+          case _ => RedisResponse.ERR
         }
       })
     })
@@ -50,9 +53,18 @@ class RedisProtocolServer @Inject()(config: Configuration,
       .map(_.utf8String)
       .via(commandParser)
       .map(result => {
-        result + "\r\n"
+        val unwrappedResult = result.headOption.getOrElse("").toString
+        val redisResult =
+          if (unwrappedResult.length == 0) "*0" else "*1" +
+            "\r\n$" + unwrappedResult.length + "\r\n" +
+            unwrappedResult + "\r\n"
+
+        print("Redis result: " + redisResult)
+        val byteString = ByteString(redisResult)
+        print("Byte string result: " + byteString)
+//        ByteString("*0\r\n")
+        byteString
       })
-      .map(ByteString(_))
 
     connection.handleWith(serverLogic)
   }
