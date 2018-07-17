@@ -55,12 +55,18 @@ class ConcurrentCacheSpec extends WordSpec with MustMatchers with MockitoSugar {
       for (i <- 1 to 10) {
         concurrentCache.add(s"key$i", s"val$i")
       }
+      // make key1 MRU: key1 -> key10 -> key9 ...
       concurrentCache.get("key1") must not be None
+
+      // evicts LRU, key11 -> key1 -> key10 -> key9 ...
       concurrentCache.add("key11", "val11")
-      concurrentCache.get("key2") mustBe None
-      val firstVal = concurrentCache.get("key1")
-      firstVal must not be None
-      firstVal.get mustBe "val1"
+
+      // eventually key2 should be evicted
+      var secondVal: Option[String] = concurrentCache.get("key2")
+      while(secondVal.isDefined) {
+        secondVal = concurrentCache.get("key2")
+      }
+      secondVal mustBe None
     }
   }
 }
