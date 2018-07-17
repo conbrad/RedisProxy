@@ -54,7 +54,12 @@ class RedisProtocolServer @Inject()(config: Configuration,
       .via(commandSender)
       .map(result => {
         val unwrappedResult = result.headOption.getOrElse("").toString
-        val redisResult = "$" + unwrappedResult.length + "\r\n" + unwrappedResult + "\r\n"
+        print("First char: " + unwrappedResult.charAt(0))
+        val redisResult = unwrappedResult.charAt(0) match {
+          case '+' => unwrappedResult // +OK
+          case '-' => unwrappedResult // +ERRs
+          case _ => "$" + unwrappedResult.length + "\r\n" + unwrappedResult + "\r\n"
+        }
         ByteString(redisResult)
       })
 
