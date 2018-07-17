@@ -28,7 +28,7 @@ class RedisProtocolServer @Inject()(config: Configuration,
     Tcp().bind(host, port)
   connections runForeach { connection =>
     // server logic, parses incoming commands
-    val commandParser = Flow[String].map(command => {
+    val commandSender = Flow[String].map(command => {
       val redisCommands = CommandParser.parseCommand(command)
       redisCommands.map(redisCommand => {
         RedisTokens.opType(redisCommand) match {
@@ -42,34 +42,26 @@ class RedisProtocolServer @Inject()(config: Configuration,
                 case false => RedisResponse.ERR
               }
           case Some(RedisTokens.COMMAND) =>
-            ""
+            RedisResponse.COMMAND
           case _ => RedisResponse.ERR
         }
       })
     })
 
     val serverLogic = Flow[ByteString]
-      .via(commandTokenizer)
+      .via(commandAggregator)
       .map(_.utf8String)
-      .via(commandParser)
+      .via(commandSender)
       .map(result => {
         val unwrappedResult = result.headOption.getOrElse("").toString
-        val redisResult =
-          if (unwrappedResult.length == 0) "*0" else "*1" +
-            "\r\n$" + unwrappedResult.length + "\r\n" +
-            unwrappedResult + "\r\n"
-
-        print("Redis result: " + redisResult)
-        val byteString = ByteString(redisResult)
-        print("Byte string result: " + byteString)
-//        ByteString("*0\r\n")
-        byteString
+        val redisResult = "$" + unwrappedResult.length + "\r\n" + unwrappedResult + "\r\n"
+        ByteString(redisResult)
       })
 
     connection.handleWith(serverLogic)
   }
 
-  private val commandTokenizer = Flow[ByteString].statefulMapConcat { () =>
+  private val commandAggregator = Flow[ByteString].statefulMapConcat { () =>
     byteString =>
       val command = byteString.utf8String
         .mkString("")

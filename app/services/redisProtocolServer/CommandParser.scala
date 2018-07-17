@@ -2,6 +2,11 @@ package services.redisProtocolServer
 
 import scala.collection.mutable.ArrayBuffer
 
+/**
+  * Contains the parseCommand method which is parses
+  * string commands into RedisCommands consisting of "op", "arg.."
+  * using a small state machine
+  */
 object CommandParser {
   def parseCommand(commandToParse: String): Seq[RedisCommand] = {
     var tokenBuffer: ArrayBuffer[Char] = ArrayBuffer[Char]()
