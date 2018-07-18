@@ -27,17 +27,34 @@ Though a bonus requirement, it greatly influenced the foundational design of the
 We leverage Play’s asynchronous request handling out of the box to enable parallel requests. We also exploit the fact that Play comes packaged with Akka Streams so we can build a TCP server with it and use the same thread pool(s) as the web application. This effectively makes the HTTP and TCP server “one scalable unit”.
 
 ### Cache:
-**TLDR;** Assume concurrency up front, O(1) reads, writes and LRU by combining a hashmap and a linked list. Writes are locked to synchronize update of hashmap and LRU. Reads are not but benign reads are avoided by using an underlying concurrent hashmap.
+**TLDR;** Assume concurrency up front, O(1) reads, writes and LRU by combining a hashmap and a linked list. Writes are locked to synchronize update of hashmap and LRU. Reads are not but benign reads are avoided by using an underlying concurrent hashmap. Global entry expiry is implemented with asychronous callbacks.
 
+#### Runtime complexity
 * All data structures that make up the cache live in package services.util
 * Supports lookups and insertions in O(1) time via a hashmap
 * Keys are Nodes of a LinkedList, which allows us to splice out nodes and put them at the tail on O(1) time to create an efficient LRU queue
+
+#### Concurrency
 * The backing hashmap is from java.util.concurrent which effectively shards data so that only parts of the map are locked during updates, reducing lock contention
 
-Updating the cache means updating 2 shared resources that must remain in sync; the hashmap and the linked list.
+* Updating the cache means updating 2 shared resources that must remain in sync; the hashmap and the linked list.
 To synchronize updates to both, we use a shared lock for requests that mutate.
 
-We **do not** use a lock for reads since reading a value from the map can be inconsistent with the LinkedList, and the underlying concurrent hashmap guarantees atomic writes which prevents [benign reads](https://bartoszmilewski.com/2014/10/01/benign-data-races-2/)
+* We **do not** use a lock for reads since reading a value from the map can be inconsistent with the LinkedList, and the underlying concurrent hashmap guarantees atomic writes which prevents [benign reads](https://bartoszmilewski.com/2014/10/01/benign-data-races-2/)
+
+#### LRU
+
+* Implemented from scratch in `services.util.LinkedList`
+* Not thread-safe, we use an lock to surround its methods that cause mutation
+* Adds are added to the tail, representing the `MRU` entry
+* Head is the `LRU` and is a candidate for eviction
+
+#### Global Expiry
+
+* Configured via the `CAPACITY` env variable
+* We use an atomic counter to increment and decrement during additions and removals from the cache respectively
+  * This way we do not have to rely on the underlying data structures' size which for ConcurrentHashMap requires iterating over it's segments
+  * This also means that it's possible that we evict an entry right after an entry expired. We assume this is ok in that we fulfill the requirement of maintaining a capacity even at the cost of evicting more than necessary at one time.
 
 The design ultimately supports more read throughput which is in line with the goals of the read-through cache
 
