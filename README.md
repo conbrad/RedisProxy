@@ -12,6 +12,9 @@ It is assumed that each server instance runs make run, which inherently means ea
 
 **Configuration**: Configurable options have defaults set and can be read/changed under the environment key in docker-compose.yml
 
+## Known Issues
+On first run sbt will try to resolve and download a dependency called `org.scala-sbt#compiler-bridge_2.12;1.1.7!compiler-bridge_2.12.jar`. On slow internet connections it can be a problem. To resolve, re-run the command and try to have a stable/fast internet connection :)
+
 ## HTTP Service
 By default runs on `localhost:9000` and includes a single route: `/:key` where `key` is the key you want to look up in redis. Stack is Play! Framework v2.6.
 
