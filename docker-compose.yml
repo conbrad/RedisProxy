@@ -2,17 +2,17 @@ version: "2"
 services:
   proxy:
       build: .
-      entrypoint: sbt "run $PROXY_PORT"
+      entrypoint: sbt "run 9000" # must be the defined port in ports
       image: conbrad/redisproxy:latest
       environment:
           - EXPIRY_TIME=10000
           - CAPACITY=1000
-          - PROXY_PORT=9000
           - REDIS_ADDR=redis
           - PROTOCOL_HOST=127.0.0.1
           - PROTOCOL_PORT=9002
       ports:
-          - "9000:9000"
+          - "9000:9000" # must be the port in entrypoint
+          - "9002:9002" # must be the port as PROTOCOL_PORT
       depends_on:
         - redis
       links:
