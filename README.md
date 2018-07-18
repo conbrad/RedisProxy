@@ -4,12 +4,13 @@
 A proxy server that acts as a read-through cache for redis GET results. It contains both a HTTP and redis TCP protocol interface. It is implemented in Scala but sticks to a mostly OOP paradigm to remain understandable to a wider audience, using functional patterns mostly for iterating over collections, pattern matching and the Option monad to enforce compile-time safety. 
 
 ## Setup
-Run make test, this will build the project and run the tests
-Note the first build will be slow, due to sbt dependency resolution
-Make run, to run the http and proxy server
-It is assumed that each server instance runs make run, which inherently means each instance runs it’s own {proxy,redis} pair
-Configurable options have defaults set and can be read/changed under the environment key in docker-compose.yml
-With the *exception* of the proxy server port which must be changed in .sbtopts
+1. Run make test, this will build the project and run the tests
+    * Note the first build will be slow, due to sbt dependency resolution
+2. Run `make run`, to run the http and proxy server
+
+It is assumed that each server instance runs make run, which inherently means each instance runs it’s own `{proxy,redis}` pair
+
+**Configuration**: Configurable options have defaults set and can be read/changed under the environment key in docker-compose.yml
 
 ## HTTP Service
 By default runs on `localhost:9000` and includes a single route: `/:key` where `key` is the key you want to look up in redis. Stack is Play! Framework v2.6.
@@ -32,7 +33,7 @@ We leverage Play’s asynchronous request handling out of the box to enable para
 #### Runtime complexity
 * All data structures that make up the cache live in package services.util
 * Supports lookups and insertions in O(1) time via a hashmap
-* Keys are Nodes of a LinkedList, which allows us to splice out nodes and put them at the tail on O(1) time to create an efficient LRU queue
+* Keys are Nodes of a LinkedList, which allows us to splice out nodes and put them at the tail in O(1) time to create an efficient LRU queue
 
 #### Concurrency
 * The backing hashmap is from java.util.concurrent which effectively shards data so that only parts of the map are locked during updates, reducing lock contention
@@ -49,12 +50,19 @@ To synchronize updates to both, we use a shared lock for requests that mutate.
 * Adds are added to the tail, representing the `MRU` entry
 * Head is the `LRU` and is a candidate for eviction
 
-#### Global Expiry
+#### Fixed Size / Capacity
 
 * Configured via the `CAPACITY` env variable
 * We use an atomic counter to increment and decrement during additions and removals from the cache respectively
   * This way we do not have to rely on the underlying data structures' size which for ConcurrentHashMap requires iterating over it's segments
-  * This also means that it's possible that we evict an entry right after an entry expired. We assume this is ok in that we fulfill the requirement of maintaining a capacity even at the cost of evicting more than necessary at one time.
+  * This also means that it's possible that we evict an entry right after an entry expired. We assume that relaxing the exact count at any point in time is acceptable since we still maintain a maximum capacity, even though it's possible we evict slightly more than we should.
+  
+#### Global expiry
+
+* Upon addition of an entry, we schedule a cancellable callback to remove it with the configured `EXPIRY_TIME` in milliseconds
+* Upon removal of an entry, we cancel the callback
+* The scheduler is from the default ActorSystem in Play!
+* The removal callback is threadsafe to serialize mutations on the cache just symmetrical with the method that adds the item.
 
 The design ultimately supports more read throughput which is in line with the goals of the read-through cache
 
@@ -67,5 +75,8 @@ The design ultimately supports more read throughput which is in line with the go
 * Total: 16 hours
 
 ## Missing requirements
+* There should be more integrations tests, reason for omission: time to implement and (over?)confidence that each component's interface is well designed
+
+* Redis protocol parser code is not as clean/maintainable as it should be, and is missing more tests. Reason for omission: integrating the protocol parser with akka streams took longer than expected as I was brand new to it. Also since it's only designed to support `gets` I'm less concerned with the ability to extend it. Before extending it I would spend time to refactor it to make it easier to work with / understand.
 
 
